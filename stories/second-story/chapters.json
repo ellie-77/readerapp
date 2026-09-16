@@ -1,0 +1,17 @@
+{
+  "title": "A Second Story",
+  "author": "Your name here",
+  "description": "A separate story with its own chapters, music, link and comments group. Readers of one story never see the other.",
+  "appLink": "",
+  "commentsGroup": "",
+  "chapters": [
+    {
+      "id": "ch1",
+      "title": "The First Morning",
+      "subtitle": "A short opening chapter",
+      "text": "chapters/ch1.md",
+      "music": "music/ch1.mp3",
+      "musicTitle": "Grey dawn"
+    }
+  ]
+}

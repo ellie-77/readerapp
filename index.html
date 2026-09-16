@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="theme-color" content="#f3efe6">
+<title>Story Reader</title>
+<!--STORY_EMBED-->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,600;1,7..72,400&family=Vazirmatn:wght@400;500;700&family=Noto+Naskh+Arabic:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f3efe6; --text:#26221d; --muted:#736a5e; --accent:#2f4a6e; --on-accent:#ffffff; --panel:#e8e2d5;
+  --line:rgba(0,0,0,.08);
+  --font-serif:'Literata','Noto Naskh Arabic',Georgia,'Times New Roman',serif;
+  --font-sans:'Vazirmatn',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  --reading-font:var(--font-serif);
+  --fs:19px; --lh:1.85;
+  --sat:env(safe-area-inset-top,0px); --sab:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;transition:background-color .35s,color .35s;overflow-x:hidden;min-height:100vh}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;-webkit-tap-highlight-color:transparent;padding:0}
+button:focus-visible,label:focus-within,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none !important}
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+
+/* top bar */
+.topbar{position:sticky;top:0;z-index:20;display:flex;align-items:center;gap:6px;padding:calc(var(--sat) + 8px) 10px 8px;background:var(--bg);background:color-mix(in srgb,var(--bg) 90%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--line)}
+.icon-btn{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:var(--text)}
+.icon-btn:active{background:var(--panel)}
+.icon-btn svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.topbar-title{flex:1;min-width:0;text-align:center;font-family:var(--font-serif);font-size:15px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.spacer{width:40px}
+
+main{max-width:680px;margin:0 auto;padding:0 20px calc(var(--sab) + 112px)}
+
+/* list view */
+.hero{padding:30px 0 16px}
+.story-author{margin:0 0 8px;font-size:14px;color:var(--muted)}
+.story-title{margin:0 0 12px;font-family:var(--font-serif);font-size:34px;line-height:1.12;font-weight:600;letter-spacing:-.01em}
+.story-desc{margin:0 0 20px;color:var(--muted);font-size:15px;line-height:1.6;max-width:52ch}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;padding:12px 18px 12px 14px;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:14px;max-width:100%}
+.btn-primary svg{width:16px;height:16px;fill:currentColor;flex:0 0 auto}
+.btn-primary span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.btn-primary:active{filter:brightness(.92)}
+.chapters{list-style:none;margin:10px 0 0;padding:0;border-top:1px solid var(--line)}
+.chapters li{border-bottom:1px solid var(--line)}
+.chapter{display:flex;align-items:center;gap:14px;width:100%;padding:15px 4px;text-align:start}
+.chapter:active{background:var(--panel)}
+.chapter .num{width:36px;height:36px;border-radius:50%;background:var(--panel);display:grid;place-items:center;font-family:var(--font-serif);font-weight:600;color:var(--accent);flex:0 0 auto;font-variant-numeric:tabular-nums}
+.chapter.read .num{background:var(--accent);color:var(--on-accent)}
+.chapter .meta{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.chapter .t{font-family:var(--font-serif);font-size:17px;font-weight:600;line-height:1.3}
+.chapter .s{font-size:13px;color:var(--muted);line-height:1.4}
+.chapter .tag{color:var(--muted);flex:0 0 auto;display:flex;align-items:center;gap:6px}
+.chapter .tag svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.notice{padding:20px 0;color:var(--muted);line-height:1.6}
+.notice code{font-family:ui-monospace,Menlo,monospace;font-size:.92em;background:var(--panel);padding:1px 5px;border-radius:5px}
+
+/* reader */
+.reader{padding-top:26px}
+.ch-num{margin:0 0 6px;font-size:13px;color:var(--muted)}
+.ch-title{font-family:var(--reading-font);font-size:calc(var(--fs) * 1.45);line-height:1.25;margin:0 0 24px;font-weight:600}
+.ch-body{font-family:var(--reading-font);font-size:var(--fs);line-height:var(--lh);overflow-wrap:break-word}
+.ch-body p{margin:0 0 1.05em}
+.ch-body h2,.ch-body h3,.ch-body h4{font-family:var(--reading-font);font-weight:600;line-height:1.3;margin:1.6em 0 .6em}
+.ch-body h2{font-size:1.3em}.ch-body h3{font-size:1.15em}.ch-body h4{font-size:1em}
+.ch-body blockquote{margin:1.2em 0;padding:.1em 1em;border-inline-start:3px solid var(--accent);color:var(--muted);font-style:italic}
+.ch-body .scene{text-align:center;margin:2em 0;color:var(--muted);letter-spacing:.6em;font-size:.8em;user-select:none}
+.ch-body .loading,.ch-body .error{color:var(--muted);font-family:var(--font-sans);font-size:15px}
+.ch-nav{display:flex;justify-content:space-between;gap:12px;margin:44px 0 8px;padding-top:20px;border-top:1px solid var(--line)}
+.ch-nav button{padding:12px 18px;border-radius:12px;background:var(--panel);font-weight:500;font-size:14px;max-width:48%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ch-nav button:disabled{opacity:.35}
+.ch-nav button:active{filter:brightness(.94)}
+
+/* music bar */
+.player{position:fixed;left:0;right:0;bottom:0;z-index:20;display:flex;align-items:center;gap:12px;padding:10px 16px calc(var(--sab) + 10px);background:var(--panel);border-top:1px solid var(--line);transition:background-color .35s}
+.player-inner{width:100%;max-width:680px;margin:0 auto;display:flex;align-items:center;gap:12px}
+.play{width:46px;height:46px;border-radius:50%;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;flex:0 0 auto;transition:transform .15s}
+.play:active{transform:scale(.94)}
+.play:disabled{opacity:.35}
+.play svg{width:20px;height:20px;fill:currentColor}
+.play.nudge{animation:nudge 1.3s ease-in-out 3}
+@keyframes nudge{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+.track{flex:1;min-width:0}
+.track-label{font-size:12px;color:var(--muted)}
+.track-name{font-size:14px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vol{display:flex;align-items:center;gap:6px;color:var(--muted);flex:0 0 auto}
+.vol svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+input[type=range]{width:78px;accent-color:var(--accent);margin:0}
+
+/* settings sheet */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:30;opacity:0;transition:opacity .25s;pointer-events:none}
+.scrim.open{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:31;background:var(--panel);color:var(--text);border-radius:22px 22px 0 0;padding:8px 20px calc(var(--sab) + 22px);transform:translateY(105%);transition:transform .32s cubic-bezier(.2,.8,.2,1);box-shadow:0 -10px 30px rgba(0,0,0,.18);max-width:680px;margin:0 auto}
+.sheet.open{transform:none}
+.sheet-handle{width:40px;height:4px;border-radius:2px;background:var(--muted);opacity:.45;margin:4px auto 12px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-top:1px solid var(--line)}
+.sheet-handle + .row{border-top:0}
+.row.col{flex-direction:column;align-items:stretch;gap:12px}
+.label{font-size:14px;font-weight:500}
+.stepper{display:flex;align-items:center;gap:2px;background:var(--bg);border-radius:999px;padding:4px}
+.stepper button{width:44px;height:36px;border-radius:999px;font-weight:600;font-size:15px}
+.stepper button:active{background:var(--panel)}
+.stepper button:disabled{opacity:.35}
+.stepper span{min-width:40px;text-align:center;font-variant-numeric:tabular-nums;font-size:14px}
+.seg{display:flex;background:var(--bg);border-radius:999px;padding:4px}
+.seg button{padding:8px 16px;border-radius:999px;font-size:14px}
+.seg button.on{background:var(--accent);color:var(--on-accent)}
+.swatches{display:flex;gap:14px;overflow-x:auto;padding:2px 2px 6px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.swatches::-webkit-scrollbar{display:none}
+.swatch{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;font-size:11px;color:var(--muted);position:relative;cursor:pointer}
+.sw-dot{width:42px;height:42px;border-radius:50%;background:var(--sw);border:2px solid var(--line);box-shadow:inset 0 0 0 2px var(--panel);display:grid;place-items:center;color:var(--sw-ink,var(--text))}
+.sw-dot svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.swatch.on{color:var(--text)}
+.swatch.on .sw-dot{border-color:var(--accent);box-shadow:inset 0 0 0 2px var(--panel),0 0 0 2px var(--accent)}
+.swatch input[type=color]{position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:0;padding:0}
+
+/* comments */
+.sel-pill{position:fixed;z-index:25;transform:translateX(-50%);display:flex;align-items:center;gap:7px;padding:10px 15px;border-radius:999px;background:var(--text);color:var(--bg);font-size:14px;font-weight:600;box-shadow:0 6px 20px rgba(0,0,0,.28);opacity:0;pointer-events:none;transition:opacity .15s;user-select:none;-webkit-user-select:none}
+.sel-pill.show{opacity:1;pointer-events:auto}
+.sel-pill svg,.ch-comment svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.ch-comment{display:inline-flex;align-items:center;gap:8px;margin:30px 0 0;padding:11px 15px;border-radius:12px;background:var(--panel);font-size:14px;font-weight:500}
+.ch-comment:active{filter:brightness(.94)}
+.ch-hint{margin:10px 0 0;font-size:13px;color:var(--muted);line-height:1.5}
+.sheet h2{font-family:var(--font-serif);font-size:18px;margin:2px 0 12px;font-weight:600}
+.quote-box{font-family:var(--reading-font);font-size:15px;line-height:1.6;color:var(--muted);background:var(--bg);border-inline-start:3px solid var(--accent);padding:10px 14px;border-radius:10px;max-height:110px;overflow:auto;margin:0 0 12px}
+.sheet textarea{width:100%;min-height:92px;resize:vertical;font:inherit;font-size:15px;line-height:1.5;color:var(--text);background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;display:block}
+.sheet textarea::placeholder{color:var(--muted)}
+.sheet-hint{font-size:12px;color:var(--muted);margin:10px 0 0;line-height:1.5}
+.sheet-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:14px}
+.btn-secondary{padding:11px 16px;border-radius:999px;background:var(--bg);font-weight:500;font-size:14px}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <button id="btnBack" class="icon-btn" aria-label="Back to chapters" hidden>
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <div class="spacer" id="spacerLeft"></div>
+  <div class="topbar-title" id="topTitle" dir="auto"></div>
+  <button id="btnSettings" class="icon-btn" aria-label="Reading settings">
+    <svg viewBox="0 0 24 24"><path d="M4 19l4.5-12h1L14 19M6 14h5M14 12.5c1.2-1.2 4-1 4 1.5v5m0-3.5c-1 0-3.5-.3-3.5 1.5s3.5 2 3.5 0"/></svg>
+  </button>
+</header>
+
+<main id="main">
+  <section id="listView" hidden>
+    <div class="hero">
+      <p class="story-author" id="storyAuthor" dir="auto"></p>
+      <h1 class="story-title" id="storyTitle" dir="auto"></h1>
+      <p class="story-desc" id="storyDesc" dir="auto"></p>
+      <button id="btnContinue" class="btn-primary" hidden>
+        <svg viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z"/></svg>
+        <span id="btnContinueText" dir="auto"></span>
+      </button>
+    </div>
+    <ol class="chapters" id="chapterList"></ol>
+    <div class="notice" id="notice" hidden></div>
+  </section>
+
+  <section id="readerView" class="reader" hidden>
+    <p class="ch-num" id="chNum"></p>
+    <h1 class="ch-title" id="chTitle" dir="auto"></h1>
+    <article class="ch-body" id="chBody"></article>
+    <button class="ch-comment" id="btnChapterComment" type="button">
+      <svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>
+      <span>Comment on this chapter</span>
+    </button>
+    <p class="ch-hint">Select any passage to comment on just that part.</p>
+    <nav class="ch-nav">
+      <button id="btnPrev">Previous chapter</button>
+      <button id="btnNext">Next chapter</button>
+    </nav>
+  </section>
+</main>
+
+<footer class="player" id="player">
+  <div class="player-inner">
+    <button id="btnPlay" class="play" aria-label="Play music" disabled>
+      <svg id="icoPlay" viewBox="0 0 24 24"><path d="M7 4l12 8-12 8z"/></svg>
+      <svg id="icoPause" viewBox="0 0 24 24" hidden><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>
+    </button>
+    <div class="track">
+      <div class="track-label">Background music</div>
+      <div class="track-name" id="trackName" dir="auto">Open a chapter to start</div>
+    </div>
+    <div class="vol">
+      <svg viewBox="0 0 24 24"><path d="M4 9v6h4l5 4V5L8 9zM16 9a3.5 3.5 0 010 6"/></svg>
+      <input type="range" id="volume" min="0" max="1" step="0.02" aria-label="Music volume">
+    </div>
+  </div>
+</footer>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-label="Reading settings">
+  <div class="sheet-handle"></div>
+  <div class="row">
+    <span class="label">Text size</span>
+    <div class="stepper">
+      <button id="fsMinus" aria-label="Smaller text">A−</button>
+      <span id="fsVal">19</span>
+      <button id="fsPlus" aria-label="Larger text">A+</button>
+    </div>
+  </div>
+  <div class="row">
+    <span class="label">Font</span>
+    <div class="seg" id="fontSeg">
+      <button data-font="serif">Serif</button>
+      <button data-font="sans">Sans</button>
+    </div>
+  </div>
+  <div class="row col">
+    <span class="label">Background</span>
+    <div class="swatches" id="swatches"></div>
+  </div>
+</div>
+
+<button class="sel-pill" id="selPill" type="button" aria-label="Comment on the selected text">
+  <svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg><span>Comment</span>
+</button>
+
+<div class="sheet" id="commentSheet" role="dialog" aria-label="Write a comment">
+  <div class="sheet-handle"></div>
+  <h2 id="commentHeading">Comment on this passage</h2>
+  <div class="quote-box" id="quoteBox" dir="auto"></div>
+  <textarea id="commentText" dir="auto" placeholder="Your comment" rows="4"></textarea>
+  <p class="sheet-hint" id="commentHint"></p>
+  <div class="sheet-actions">
+    <button class="btn-secondary" id="commentCancel" type="button">Cancel</button>
+    <button class="btn-primary" id="commentSend" type="button"><span>Send to comments</span></button>
+  </div>
+</div>
+
+<audio id="audio" loop preload="metadata"></audio>
+
+<script>
+(() => {
+'use strict';
+
+/* ---------- config ---------- */
+const STORIES_DIR = 'stories';          // each story lives in stories/<name>/ with its own chapters.json
+const DEFAULT_STORY = '';                // optional: story to open when the address has no ?story=
+const FS_MIN = 14, FS_MAX = 30;
+
+/* ---------- Telegram ---------- */
+const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
+const inTelegram = !!(tg && tg.initData);
+
+/* ---------- which story? ----------
+   1. ?story=name in the page address (this is what each story's Mini App link uses)
+   2. a Telegram start parameter of the form name__chapter (one Mini App shared by several stories)
+   3. DEFAULT_STORY                                                              */
+const START_PARAM = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || '';
+const startParts = START_PARAM.includes('__') ? START_PARAM.split('__') : [null, START_PARAM];
+const STORY = (window.STORY_EMBED && (window.STORY_EMBED.slug || 'preview'))
+  || new URLSearchParams(location.search).get('story') || startParts[0] || DEFAULT_STORY || '';
+const STORY_KEY = STORY.replace(/[^A-Za-z0-9_-]/g, '_');
+const STORY_BASE = STORY ? `${STORIES_DIR}/${STORY}/` : '';
+
+/* ---------- storage ---------- */
+const store = {
+  get(k, d){ try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const settings = Object.assign(
+  { fontSize: 19, font: 'serif', theme: null, customBg: '#dfe6ea', volume: 0.6, musicOn: true },
+  store.get('reader.settings', {})
+);
+const PROGRESS_KEY = 'reader.progress.' + STORY_KEY;
+const progress = Object.assign({ last: null, read: [], scroll: {}, updatedAt: 0 }, store.get(PROGRESS_KEY, {}));
+const saveSettings = () => store.set('reader.settings', settings);
+const saveProgress = (flush) => { progress.updatedAt = Date.now(); store.set(PROGRESS_KEY, progress); cloudSave(flush); };
+
+/* ---------- elements ---------- */
+const $ = id => document.getElementById(id);
+const els = {
+  btnBack: $('btnBack'), spacerLeft: $('spacerLeft'), topTitle: $('topTitle'), btnSettings: $('btnSettings'),
+  listView: $('listView'), readerView: $('readerView'),
+  storyAuthor: $('storyAuthor'), storyTitle: $('storyTitle'), storyDesc: $('storyDesc'),
+  btnContinue: $('btnContinue'), btnContinueText: $('btnContinueText'), chapterList: $('chapterList'), notice: $('notice'),
+  chNum: $('chNum'), chTitle: $('chTitle'), chBody: $('chBody'), btnPrev: $('btnPrev'), btnNext: $('btnNext'),
+  btnPlay: $('btnPlay'), icoPlay: $('icoPlay'), icoPause: $('icoPause'), trackName: $('trackName'), volume: $('volume'),
+  scrim: $('scrim'), sheet: $('sheet'), fsMinus: $('fsMinus'), fsPlus: $('fsPlus'), fsVal: $('fsVal'),
+  fontSeg: $('fontSeg'), swatches: $('swatches'), audio: $('audio'), player: $('player'),
+  selPill: $('selPill'), btnChapterComment: $('btnChapterComment'), commentSheet: $('commentSheet'),
+  commentHeading: $('commentHeading'), quoteBox: $('quoteBox'), commentText: $('commentText'),
+  commentHint: $('commentHint'), commentCancel: $('commentCancel'), commentSend: $('commentSend')
+};
+
+/* ---------- themes ---------- */
+const THEMES = {
+  paper: { name: 'Paper', bg: '#f3efe6', text: '#26221d', muted: '#736a5e', accent: '#2f4a6e', onAccent: '#ffffff', panel: '#e8e2d5' },
+  sepia: { name: 'Sepia', bg: '#e7d9bf', text: '#3a2c1c', muted: '#7d6a50', accent: '#7a2e2e', onAccent: '#ffffff', panel: '#dbc9a8' },
+  mist:  { name: 'Mist',  bg: '#e3e9ee', text: '#1f2a33', muted: '#617180', accent: '#1f6f78', onAccent: '#ffffff', panel: '#d3dce3' },
+  moss:  { name: 'Moss',  bg: '#e2e9dc', text: '#20301c', muted: '#63735c', accent: '#3f6b35', onAccent: '#ffffff', panel: '#d1dbc8' },
+  dusk:  { name: 'Dusk',  bg: '#282633', text: '#e8e4ef', muted: '#a49fb4', accent: '#d9a85a', onAccent: '#1d1608', panel: '#353244' },
+  night: { name: 'Night', bg: '#0f0f10', text: '#d6d3cc', muted: '#8a8781', accent: '#d9a85a', onAccent: '#1d1608', panel: '#1c1c1e' }
+};
+
+const hexToRgb = h => { const s = h.replace('#',''); const n = parseInt(s.length === 3 ? s.split('').map(c => c + c).join('') : s, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; };
+const rgbToHex = ([r,g,b]) => '#' + [r,g,b].map(v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2,'0')).join('');
+const isDark = h => { const [r,g,b] = hexToRgb(h); return (0.2126*r + 0.7152*g + 0.0722*b) < 128; };
+const mix = (a, b, t) => { const A = hexToRgb(a), B = hexToRgb(b); return rgbToHex(A.map((v,i) => v + (B[i]-v)*t)); };
+
+function telegramTheme(){
+  const p = tg && tg.themeParams;
+  if (!p || !p.bg_color) return null;
+  const dark = isDark(p.bg_color);
+  return {
+    name: 'Telegram', bg: p.bg_color, text: p.text_color || (dark ? '#e8e8e8' : '#222222'),
+    muted: p.hint_color || mix(p.bg_color, dark ? '#ffffff' : '#000000', .5),
+    accent: p.button_color || p.link_color || '#2f4a6e', onAccent: p.button_text_color || '#ffffff',
+    panel: p.secondary_bg_color || mix(p.bg_color, dark ? '#ffffff' : '#000000', .07)
+  };
+}
+function customTheme(bg){
+  const dark = isDark(bg);
+  return { name: 'Custom', bg, text: dark ? '#e9e6e0' : '#24211c', muted: mix(bg, dark ? '#ffffff' : '#000000', .5),
+    accent: dark ? '#d9a85a' : '#2f4a6e', onAccent: dark ? '#1d1608' : '#ffffff', panel: mix(bg, dark ? '#ffffff' : '#000000', .08) };
+}
+function currentThemeId(){
+  if (settings.theme) return settings.theme;
+  return matchMedia('(prefers-color-scheme: dark)').matches ? 'night' : 'paper';
+}
+function currentTheme(){
+  const id = currentThemeId();
+  if (id === 'telegram') return telegramTheme() || THEMES.paper;
+  if (id === 'custom') return customTheme(settings.customBg);
+  return THEMES[id] || THEMES.paper;
+}
+function applyTheme(){
+  const t = currentTheme();
+  const r = document.documentElement.style;
+  r.setProperty('--bg', t.bg); r.setProperty('--text', t.text); r.setProperty('--muted', t.muted);
+  r.setProperty('--accent', t.accent); r.setProperty('--on-accent', t.onAccent); r.setProperty('--panel', t.panel);
+  r.setProperty('--line', isDark(t.bg) ? 'rgba(255,255,255,.1)' : 'rgba(0,0,0,.08)');
+  const meta = document.querySelector('meta[name=theme-color]'); if (meta) meta.setAttribute('content', t.bg);
+  if (tg) { try { tg.setHeaderColor(t.bg); tg.setBackgroundColor(t.bg); } catch (e) {} }
+  const id = currentThemeId();
+  els.swatches.querySelectorAll('.swatch').forEach(s => s.classList.toggle('on', s.dataset.theme === id));
+}
+function applyFont(){
+  document.documentElement.style.setProperty('--reading-font', settings.font === 'sans' ? 'var(--font-sans)' : 'var(--font-serif)');
+  els.fontSeg.querySelectorAll('button').forEach(b => b.classList.toggle('on', b.dataset.font === settings.font));
+}
+function applyFontSize(){
+  document.documentElement.style.setProperty('--fs', settings.fontSize + 'px');
+  els.fsVal.textContent = settings.fontSize;
+  els.fsMinus.disabled = settings.fontSize <= FS_MIN;
+  els.fsPlus.disabled = settings.fontSize >= FS_MAX;
+}
+
+function buildSwatches(){
+  const list = Object.entries(THEMES).map(([id, t]) => ({ id, bg: t.bg, name: t.name }));
+  const tt = telegramTheme(); if (tt) list.push({ id: 'telegram', bg: tt.bg, name: 'Telegram' });
+  list.push({ id: 'custom', bg: settings.customBg, name: 'Custom', custom: true });
+  els.swatches.innerHTML = '';
+  list.forEach(item => {
+    const el = document.createElement(item.custom ? 'label' : 'button');
+    el.className = 'swatch'; el.dataset.theme = item.id;
+    el.style.setProperty('--sw', item.bg);
+    el.style.setProperty('--sw-ink', isDark(item.bg) ? '#f4f2ee' : '#26221d');
+    el.innerHTML = `<span class="sw-dot">${item.custom ? '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>' : ''}</span><span>${item.name}</span>`;
+    if (item.custom) {
+      const input = document.createElement('input'); input.type = 'color'; input.value = settings.customBg; input.setAttribute('aria-label', 'Custom background color');
+      input.addEventListener('input', () => { settings.customBg = input.value; settings.theme = 'custom'; el.style.setProperty('--sw', input.value); el.style.setProperty('--sw-ink', isDark(input.value) ? '#f4f2ee' : '#26221d'); applyTheme(); saveSettings(); });
+      el.appendChild(input);
+      el.addEventListener('click', () => { if (settings.theme !== 'custom') { settings.theme = 'custom'; applyTheme(); saveSettings(); } });
+    } else {
+      el.type = 'button'; el.setAttribute('aria-label', item.name + ' background');
+      el.addEventListener('click', () => { settings.theme = item.id; applyTheme(); saveSettings(); });
+    }
+    els.swatches.appendChild(el);
+  });
+}
+
+/* ---------- settings sheet ---------- */
+let sheetOpen = false;
+function openSheet(){ sheetOpen = true; els.sheet.classList.add('open'); els.scrim.classList.add('open'); }
+function closeSheet(){ sheetOpen = false; els.sheet.classList.remove('open'); els.scrim.classList.remove('open'); }
+els.btnSettings.addEventListener('click', () => sheetOpen ? closeSheet() : openSheet());
+els.scrim.addEventListener('click', () => { closeSheet(); closeComment(); });
+els.fsMinus.addEventListener('click', () => { settings.fontSize = Math.max(FS_MIN, settings.fontSize - 1); applyFontSize(); saveSettings(); });
+els.fsPlus.addEventListener('click', () => { settings.fontSize = Math.min(FS_MAX, settings.fontSize + 1); applyFontSize(); saveSettings(); });
+els.fontSeg.addEventListener('click', e => { const b = e.target.closest('button'); if (!b) return; settings.font = b.dataset.font; applyFont(); saveSettings(); });
+
+/* ---------- markdown (small, safe subset) ---------- */
+function renderMarkdown(md){
+  const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const inline = s => s
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/__(.+?)__/g, '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    .replace(/_(.+?)_/g, '<em>$1</em>');
+  return md.replace(/\r\n/g, '\n').split(/\n{2,}/).map(block => {
+    const b = block.trim();
+    if (!b) return '';
+    if (/^([*\-_]\s*){3,}$/.test(b)) return '<div class="scene" aria-hidden="true">✦ ✦ ✦</div>';
+    const h = b.match(/^(#{1,3})\s+(.*)$/s);
+    if (h) { const lvl = h[1].length + 1; return `<h${lvl} dir="auto">${inline(esc(h[2]))}</h${lvl}>`; }
+    if (b.startsWith('>')) return `<blockquote dir="auto">${inline(esc(b.replace(/^>\s?/gm, ''))).replace(/\n/g, '<br>')}</blockquote>`;
+    return `<p dir="auto">${inline(esc(b)).replace(/\n/g, '<br>')}</p>`;
+  }).join('\n');
+}
+
+/* ---------- story data ---------- */
+let story = null;
+const textCache = new Map();
+
+const isAbsolute = p => /^(https?:|data:|\/)/i.test(p);
+const resolvePath = p => (!p || isAbsolute(p)) ? p : STORY_BASE + p;
+async function loadStory(){
+  if (window.STORY_EMBED) return window.STORY_EMBED;
+  if (!STORY) throw new Error('no story selected');
+  const res = await fetch(STORY_BASE + 'chapters.json', { cache: 'no-cache' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const data = await res.json();
+  const s = Array.isArray(data) ? { title: 'Story', chapters: data } : data;
+  s.slug = STORY;
+  return s;
+}
+async function loadText(ch){
+  if (ch.textInline != null) return ch.textInline;
+  if (textCache.has(ch.id)) return textCache.get(ch.id);
+  const res = await fetch(resolvePath(ch.text), { cache: 'no-cache' });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const t = await res.text();
+  textCache.set(ch.id, t);
+  return t;
+}
+
+/* ---------- views ---------- */
+let view = 'list';
+let current = -1;
+
+function showView(name){
+  view = name;
+  els.listView.hidden = name !== 'list';
+  els.readerView.hidden = name !== 'reader';
+  const showBack = name === 'reader';
+  if (tg) { try { showBack ? tg.BackButton.show() : tg.BackButton.hide(); } catch (e) {} }
+  els.btnBack.hidden = !(showBack && !inTelegram);
+  els.spacerLeft.hidden = !els.btnBack.hidden;
+  window.scrollTo(0, 0);
+}
+function showList(){
+  rememberScroll();
+  closeComment(); hidePill();
+  current = -1;
+  renderList();
+  showView('list');
+}
+
+function renderList(){
+  if (!story) return;
+  els.topTitle.textContent = story.title || 'Story';
+  els.storyTitle.textContent = story.title || 'Story';
+  els.storyAuthor.textContent = story.author || '';
+  els.storyAuthor.hidden = !story.author;
+  els.storyDesc.textContent = story.description || '';
+  els.storyDesc.hidden = !story.description;
+  els.chapterList.innerHTML = '';
+  story.chapters.forEach((ch, i) => {
+    const li = document.createElement('li');
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'chapter' + (progress.read.includes(ch.id) ? ' read' : '');
+    btn.innerHTML = `<span class="num">${i + 1}</span><span class="meta"><span class="t" dir="auto"></span><span class="s" dir="auto"></span></span><span class="tag"></span>`;
+    btn.querySelector('.t').textContent = ch.title || 'Chapter ' + (i + 1);
+    const sub = btn.querySelector('.s'); sub.textContent = ch.subtitle || ''; sub.hidden = !ch.subtitle;
+    if (ch.music) btn.querySelector('.tag').innerHTML = '<svg viewBox="0 0 24 24" aria-label="Has music"><path d="M9 18V6l10-2v12"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>';
+    btn.addEventListener('click', () => openChapter(ch.id, { resume: true }));
+    li.appendChild(btn);
+    els.chapterList.appendChild(li);
+  });
+  const last = story.chapters.find(c => c.id === progress.last);
+  if (last) {
+    els.btnContinue.hidden = false;
+    els.btnContinueText.textContent = 'Continue reading: ' + last.title;
+    els.btnContinue.onclick = () => openChapter(last.id, { resume: true });
+  } else {
+    els.btnContinue.hidden = true;
+  }
+}
+
+async function openChapter(id, opts = {}){
+  const idx = story.chapters.findIndex(c => c.id === id);
+  if (idx < 0) return;
+  rememberScroll();
+  const ch = story.chapters[idx];
+  current = idx;
+  setMusic(ch);                       // first, so it starts inside the tap gesture
+  closeComment(); hidePill();
+  showView('reader');
+  els.topTitle.textContent = story.title || 'Story';
+  els.chNum.textContent = `Chapter ${idx + 1} of ${story.chapters.length}`;
+  els.chTitle.textContent = ch.title || '';
+  els.chBody.innerHTML = '<p class="loading">Loading…</p>';
+  els.btnPrev.disabled = idx === 0;
+  els.btnNext.disabled = idx === story.chapters.length - 1;
+  els.btnNext.textContent = idx === story.chapters.length - 1 ? 'The end' : 'Next chapter';
+  progress.last = ch.id; saveProgress();
+  try {
+    const md = await loadText(ch);
+    if (current !== idx) return;
+    els.chBody.innerHTML = renderMarkdown(md);
+    const y = opts.resume ? (progress.scroll[ch.id] || 0) : 0;
+    requestAnimationFrame(() => window.scrollTo(0, y));
+  } catch (e) {
+    els.chBody.innerHTML = `<p class="error">This chapter could not be loaded (${e.message}). Check that the file <code>${ch.text || ''}</code> exists and try again.</p>`;
+  }
+}
+els.btnPrev.addEventListener('click', () => { if (current > 0) openChapter(story.chapters[current - 1].id); });
+els.btnNext.addEventListener('click', () => { if (current < story.chapters.length - 1) openChapter(story.chapters[current + 1].id); });
+els.btnBack.addEventListener('click', showList);
+
+/* progress: remember position, mark chapter read at the end */
+function rememberScroll(){
+  if (view !== 'reader' || current < 0) return;
+  const ch = story.chapters[current];
+  progress.scroll[ch.id] = window.scrollY;
+  const bottom = window.innerHeight + window.scrollY >= document.body.scrollHeight - 80;
+  if (bottom && !progress.read.includes(ch.id)) progress.read.push(ch.id);
+  saveProgress();
+}
+let scrollTimer = null;
+window.addEventListener('scroll', () => { clearTimeout(scrollTimer); scrollTimer = setTimeout(rememberScroll, 300); if (els.selPill.classList.contains('show')) updatePill(); }, { passive: true });
+window.addEventListener('pagehide', () => { rememberScroll(); saveProgress(true); });
+
+/* ---------- bookmark sync across devices (Telegram CloudStorage) ---------- */
+const cloud = (inTelegram && tg.CloudStorage && typeof tg.isVersionAtLeast === 'function' && tg.isVersionAtLeast('6.9')) ? tg.CloudStorage : null;
+let cloudTimer = null;
+function cloudPayload(){
+  let payload = JSON.stringify(progress);
+  if (payload.length > 3800) {           // CloudStorage values are capped at 4096 characters
+    const keep = {}; if (progress.last) keep[progress.last] = progress.scroll[progress.last] || 0;
+    payload = JSON.stringify(Object.assign({}, progress, { scroll: keep }));
+  }
+  return payload;
+}
+function cloudSave(flush){
+  if (!cloud) return;
+  clearTimeout(cloudTimer);
+  const write = () => { try { cloud.setItem('progress.' + STORY_KEY, cloudPayload(), () => {}); } catch (e) {} };
+  if (flush) write(); else cloudTimer = setTimeout(write, 1500);
+}
+function pullCloudProgress(){
+  return new Promise(resolve => {
+    if (!cloud) return resolve();
+    const done = () => resolve();
+    try {
+      cloud.getItem('progress.' + STORY_KEY, (err, raw) => {
+        if (!err && raw) {
+          try {
+            const remote = JSON.parse(raw);
+            if (remote && (remote.updatedAt || 0) > (progress.updatedAt || 0)) {
+              progress.last = remote.last || progress.last;
+              progress.scroll = Object.assign({}, progress.scroll, remote.scroll || {});
+              progress.read = Array.from(new Set([].concat(progress.read || [], remote.read || [])));
+              progress.updatedAt = remote.updatedAt;
+              store.set(PROGRESS_KEY, progress);
+            }
+          } catch (e) {}
+        }
+        done();
+      });
+      setTimeout(done, 2500);            // never block the app on a slow cloud read
+    } catch (e) { done(); }
+  });
+}
+
+/* ---------- comments: select a passage, write, send to Telegram ---------- */
+let pendingQuote = '';
+let commentOpen = false;
+let pillTimer = null;
+const truncate = (s, n) => s.length > n ? s.slice(0, n - 1).trimEnd() + '…' : s;
+
+function selectionInChapter(){
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return null;
+  const range = sel.getRangeAt(0);
+  if (!els.chBody.contains(range.commonAncestorContainer)) return null;
+  const text = sel.toString().replace(/\s+/g, ' ').trim();
+  if (text.length < 2) return null;
+  return { text, rect: range.getBoundingClientRect() };
+}
+function updatePill(){
+  if (view !== 'reader' || commentOpen) { hidePill(); return; }
+  const s = selectionInChapter();
+  if (!s) { hidePill(); return; }
+  pendingQuote = s.text;
+  clearTimeout(pillTimer);
+  const playerTop = els.player.getBoundingClientRect().top;
+  let x = Math.max(90, Math.min(window.innerWidth - 90, s.rect.left + s.rect.width / 2));
+  let y = s.rect.bottom + 10;
+  if (y + 44 > playerTop - 8) y = s.rect.top - 56;
+  if (y < 64) y = 64;
+  els.selPill.style.left = x + 'px';
+  els.selPill.style.top = y + 'px';
+  els.selPill.classList.add('show');
+}
+function hidePill(){ clearTimeout(pillTimer); pillTimer = setTimeout(() => els.selPill.classList.remove('show'), 150); }
+let selTimer = null;
+document.addEventListener('selectionchange', () => { clearTimeout(selTimer); selTimer = setTimeout(updatePill, 120); });
+els.selPill.addEventListener('pointerdown', e => { e.preventDefault(); openComment(pendingQuote); });
+els.selPill.addEventListener('click', e => e.preventDefault());
+els.btnChapterComment.addEventListener('click', () => openComment(''));
+
+function openComment(quote){
+  if (view !== 'reader' || current < 0 || commentOpen) return;
+  pendingQuote = quote || '';
+  commentOpen = true;
+  els.selPill.classList.remove('show');
+  els.commentHeading.textContent = pendingQuote ? 'Comment on this passage' : 'Comment on this chapter';
+  els.quoteBox.hidden = !pendingQuote;
+  els.quoteBox.textContent = pendingQuote ? '“' + truncate(pendingQuote, 300) + '”' : '';
+  const direct = !!(story && story.commentsGroup);
+  els.commentHint.textContent = direct
+    ? 'This opens the comments group with your message ready. Tap send there to post it under your name.'
+    : 'Telegram will ask which chat to send it to. Your message can still be edited before sending.';
+  els.commentSend.querySelector('span').textContent = direct ? 'Send to comments' : 'Share to Telegram';
+  els.commentSheet.classList.add('open');
+  els.scrim.classList.add('open');
+  setTimeout(() => { try { els.commentText.focus(); } catch (e) {} }, 350);
+}
+function closeComment(){
+  if (!commentOpen) return;
+  commentOpen = false;
+  els.commentSheet.classList.remove('open');
+  if (!sheetOpen) els.scrim.classList.remove('open');
+  try { els.commentText.blur(); window.getSelection().removeAllRanges(); } catch (e) {}
+}
+function chapterLink(ch){
+  if (story.appLink) return story.appLink.replace(/\/+$/, '') + '?startapp=' + encodeURIComponent(ch.id);
+  const u = new URL(location.href); u.hash = '';
+  u.search = '?story=' + encodeURIComponent(STORY) + '&chapter=' + encodeURIComponent(ch.id);
+  return u.href;
+}
+els.commentCancel.addEventListener('click', closeComment);
+els.commentSend.addEventListener('click', () => {
+  const ch = story.chapters[current];
+  const comment = els.commentText.value.trim();
+  const lines = [`${story.title || 'Story'} — Chapter ${current + 1}: ${ch.title || ''}`];
+  if (pendingQuote) lines.push('', '“' + truncate(pendingQuote, 300) + '”');
+  if (comment) lines.push('', comment);
+  const link = chapterLink(ch);
+  let url;
+  if (story.commentsGroup) {
+    lines.push('', link);
+    url = 'https://t.me/' + story.commentsGroup.replace(/^@/, '') + '?text=' + encodeURIComponent(lines.join('\n'));
+  } else {
+    url = 'https://t.me/share/url?url=' + encodeURIComponent(link) + '&text=' + encodeURIComponent(lines.join('\n'));
+  }
+  rememberScroll(); saveProgress(true);
+  if (inTelegram) { try { tg.openTelegramLink(url); } catch (e) { window.open(url, '_blank'); } }
+  else window.open(url, '_blank');
+  els.commentText.value = '';
+  closeComment();
+});
+
+/* ---------- music ---------- */
+const audio = els.audio;
+let actx = null, gainNode = null;
+
+function ensureAudioGraph(){
+  if (actx) return;
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    actx = new AC();
+    const src = actx.createMediaElementSource(audio);
+    gainNode = actx.createGain();
+    gainNode.gain.value = settings.volume;
+    src.connect(gainNode); gainNode.connect(actx.destination);
+  } catch (e) { actx = null; gainNode = null; }
+}
+function applyVolume(){
+  if (gainNode) gainNode.gain.value = settings.volume;
+  try { audio.volume = settings.volume; } catch (e) {}
+}
+function setPlayUI(playing){
+  els.icoPlay.hidden = playing;
+  els.icoPause.hidden = !playing;
+  els.btnPlay.setAttribute('aria-label', playing ? 'Pause music' : 'Play music');
+}
+function tryPlay(){
+  ensureAudioGraph();
+  if (actx && actx.state === 'suspended') actx.resume().catch(() => {});
+  const p = audio.play();
+  if (p && p.catch) p.then(() => { setPlayUI(true); els.btnPlay.classList.remove('nudge'); })
+                     .catch(() => { setPlayUI(false); els.btnPlay.classList.add('nudge'); });
+}
+function setMusic(ch){
+  const src = ch.music || '';
+  els.btnPlay.disabled = !src;
+  if (!src) {
+    audio.pause(); audio.removeAttribute('src'); audio.load();
+    els.trackName.textContent = 'No music for this chapter';
+    setPlayUI(false);
+    return;
+  }
+  const name = ch.musicTitle || src.split('/').pop().split('?')[0].replace(/\.[a-z0-9]+$/i, '').replace(/[-_]+/g, ' ');
+  els.trackName.textContent = name;
+  const path = resolvePath(src);
+  const abs = path.startsWith('data:') ? path : new URL(path, location.href).href;
+  if (audio.src !== abs) { audio.src = path; audio.currentTime = 0; }
+  if (settings.musicOn) tryPlay(); else setPlayUI(false);
+}
+els.btnPlay.addEventListener('click', () => {
+  if (audio.paused) { settings.musicOn = true; tryPlay(); }
+  else { settings.musicOn = false; audio.pause(); setPlayUI(false); }
+  saveSettings();
+});
+audio.addEventListener('play', () => setPlayUI(true));
+audio.addEventListener('pause', () => setPlayUI(false));
+els.volume.value = settings.volume;
+els.volume.addEventListener('input', () => { settings.volume = parseFloat(els.volume.value); applyVolume(); saveSettings(); });
+
+/* ---------- boot ---------- */
+function initialChapterId(){
+  const url = new URLSearchParams(location.search).get('chapter');
+  const hash = location.hash.replace('#', '');
+  return url || startParts[1] || hash || null;
+}
+function showNotice(html){ els.notice.hidden = false; els.notice.innerHTML = html; }
+
+async function boot(){
+  buildSwatches(); applyTheme(); applyFont(); applyFontSize(); applyVolume();
+  if (tg) {
+    try {
+      tg.ready(); tg.expand();
+      if (typeof tg.disableVerticalSwipes === 'function') tg.disableVerticalSwipes();   // so long-press selection doesn't drag the app closed
+      tg.BackButton.onClick(() => { if (commentOpen) closeComment(); else if (sheetOpen) closeSheet(); else showList(); });
+      tg.onEvent('themeChanged', () => { buildSwatches(); applyTheme(); });
+    } catch (e) {}
+  }
+  showView('list');
+  try {
+    story = await loadStory();
+    if (!story || !Array.isArray(story.chapters)) throw new Error('chapters.json has no "chapters" list');
+  } catch (e) {
+    els.topTitle.textContent = 'Story';
+    if (!STORY) showNotice('No story selected. Open this page through a story\'s Telegram link, or add <code>?story=NAME</code> to the address.');
+    else showNotice(`The story <code>${STORY}</code> could not be loaded (${e.message}).<br>Make sure <code>${STORY_BASE}chapters.json</code> exists and the page is opened from a web address, not from a local file.`);
+    return;
+  }
+  await pullCloudProgress();
+  renderList();
+  const want = initialChapterId();
+  if (want && story.chapters.some(c => c.id === want)) openChapter(want, { resume: true });
+}
+boot();
+})();
+</script>
+</body>
+</html>
