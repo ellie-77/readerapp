@@ -1,22 +1,22 @@
 {
-  "title": "The Lantern Road",
-  "author": "Your name here",
-  "description": "A story told in chapters. Each chapter has its own music.",
+  "title": "دیوارهای کاغذی",
+  "author": "الی",
+  "description": "داستانی دنج و عاشقانه درباره دو همسایه، دیوارهای نازک و گربه‌ها .",
   "appLink": "",
   "commentsGroup": "",
   "chapters": [
     {
       "id": "ch1",
-      "title": "The Letter Under the Step",
-      "subtitle": "In which Mara finds something that was never meant to be found",
+      "title": "آپارتمان ۳۰۷ و همسایه پر سر و صدا",
+      "subtitle": "جایی که هان با مینهو و باغ‌وحش کوچکش آشنا می‌شود",
       "text": "chapters/ch1.md",
       "music": "music/ch1.mp3",
-      "musicTitle": "Quiet harbor"
+      "musicTitle": "Stray Kids - twilight"
     },
     {
       "id": "ch2",
-      "title": "جاده‌ای که به دریا می‌رسید",
-      "subtitle": "فصلی نمونه به فارسی، برای آزمایش راست‌به‌چپ",
+      "title": "چپتر ۲",
+      "subtitle": "تست",
       "text": "chapters/ch2.md",
       "music": "music/ch2.mp3",
       "musicTitle": "Night wind"
