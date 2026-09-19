@@ -12,14 +12,14 @@
       "text": "chapters/ch1.md",
       "music": "music/ch1.mp3",
       "musicTitle": "Quiet harbor"
-    },
+    },    
     {
       "id": "ch2",
-      "title": "چپتر ۲",
-      "subtitle": "تست",
+      "title": "دامپلینگ‌های دریایی و لبخندهای پنهانی",
+      "subtitle": "صبح روز بعد و دیوارهایی که دیگر مانع نیستند",
       "text": "chapters/ch2.md",
       "music": "music/ch2.mp3",
-      "musicTitle": "Night wind"
+      "musicTitle": "Stray Kids - Sunshine"
     }
   ]
 }
