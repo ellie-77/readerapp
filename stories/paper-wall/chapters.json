@@ -20,6 +20,15 @@
       "text": "chapters/ch2.md",
       "music": "music/ch2.mp3",
       "musicTitle": "Stray Kids - Sunshine"
+    }, 
+    {
+      "id": "ch3",
+      "title": "ملودی ناتمام و یک پیمانه شکر",
+      "subtitle": "جایی که هان به بهانه شکر به آپارتمان ۳۰۸ می‌رود و یک قلب کج‌وکوله می‌پزد",
+      "text": "chapters/ch3.md",
+      "music": "music/ch3.mp3",
+      "musicTitle": "HAN - Close"
     }
+
   ]
 }
