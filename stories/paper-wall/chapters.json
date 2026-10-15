@@ -28,7 +28,16 @@
       "text": "chapters/ch3.md",
       "music": "music/ch3.mp3",
       "musicTitle": "HAN - Close"
+    },
+    {
+      "id": "ch4",
+      "title": "شکر، ریحان و رازهای بالکن",
+      "subtitle": "جایی که هفت ساعت روی کاناپه می‌گذرد و لحظه‌های معمولی در دفترچه‌ها مستند می‌شوند",
+      "text": "chapters/ch4.md",
+      "music": "music/ch4.mp3",
+      "musicTitle": "Stray Kids - Secret Secret"
     }
+
 
   ]
 }
