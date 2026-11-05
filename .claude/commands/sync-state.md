@@ -1,10 +1,7 @@
-Sync our core story documents with everything that's happened since they were last updated.
+Synchronize our core story documents with the final version of the latest chapter and all edits discussed in this session.
 
 Steps:
-1. Read `story/docs/story-bible.md` and `story/docs/handoff-state.md` to see their current state.
-2. Read the most recent chapter(s) in `story/chapters/` (and anything else discussed in this session) to identify what's changed: new or developed characters, world-building details, plot events, resolved or opened threads.
-3. Update `story/docs/story-bible.md` with any new/changed character profiles, traits, world-building, or chapter outline adjustments. Keep existing structure and content intact — add and amend, don't rewrite wholesale, unless asked.
-4. Rewrite `story/docs/handoff-state.md` to reflect the current state: a short summary of where the story is now, the active plot threads, and clear handoff notes for whoever (or whatever session) writes the next chapter.
-5. Summarize what you updated in both files so I can confirm or correct it.
-
-This is the only command (besides an explicit request from me) that should modify `story-bible.md` or `handoff-state.md`.
+1. Read the latest chapter file in `story/chapters/` and review all plot, character, and timeline adjustments we made during this session.
+2. Update `story/docs/story-bible.md` to reflect any changes to character traits, relationships, lore, or future chapter outlines caused by our edits.
+3. Update `story/docs/handoff-state.md` with a concise summary of the newly completed chapter, the current status of the characters, unresolved hooks, and essential handoff context needed before writing the next chapter.
+4. Show me a summary of the exact changes you made to both documentation files so I can review them with `git diff`.
